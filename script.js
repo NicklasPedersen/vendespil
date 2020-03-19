@@ -1,15 +1,52 @@
-function makeStruct(structFields) {
-    var fields = structFields.split(',').map(function(item) {
-        return item.trim();
-    });
-    return function() {
-        for (var i = 0; i < fields.length; i++) {
-            this[fields[i]] = arguments[i];
+class MatchingGame {
+    constructor(cardArray) {
+        this.cardArray = cardArray;
+    }
+    startGame() {
+        this.generateCards();
+        this.cardToCheck = null;
+        this.matchedCards = [];
+        this.busy = false;
+        this.totalClicks = 0;
+        this.ticker = document.getElementById("flips");
+        this.ticker.innerText = this.totalClicks;
+    }
+    generateCards() {
+        var names = [
+            "smiley",
+            "cat",
+            "line",
+            "cross",
+            "star",
+            "square",
+            "triangle",
+            "circle",
+            "up-arrow",
+            "left-arrow",
+            "right-arrow",
+            "down-arrow",
+        ];
+        var cardFaces = [];
+        // Create a pair for each different name
+        for (var i = 0; i < names.length && i < this.cardArray.length / 2; i++) {
+            var cardFace1 = new Image();
+            var cardFace2 = new Image();
+            cardFace1.src = "assets/" + names[i] + ".png";
+            cardFace2.src = "assets/" + names[i] + ".png";
+            cardFace1.id = i;
+            cardFace2.id = i;
+            cardFace1.classList.add("card-value");
+            cardFace2.classList.add("card-value");
+            cardFaces.push(cardFace1);
+            cardFaces.push(cardFace2);
         }
-    };
+        scrambleArray(cardFaces);
+        for (var i = 0; i < this.cardArray.length; i++) {
+            this.cardArray[i].id = cardFaces[i].id;
+            getChildByClassName(this.cardArray[i], "card-front").appendChild(cardFaces[i]);
+        }
+    }
 }
-
-var MatchingGame = makeStruct("cardArray");
 
 function getChildByClassName(parent, className) {
     for (var i = 0; i < parent.children.length; i++) {
@@ -33,98 +70,61 @@ function scrambleArray(arr) {
     }
 }
 
-function generateCards(game) {
-    var names = [
-        "smiley",
-        "cat",
-        "line",
-        "cross",
-        "star",
-        "square",
-        "triangle",
-        "circle",
-        "up-arrow",
-        "left-arrow",
-        "right-arrow",
-        "down-arrow",
-    ];
-    var cardFaces = [];
-    // Create a pair for each different name
-    for (var i = 0; i < names.length && i < game.cardArray.length / 2; i++) {
-        var cardFace1 = new Image();
-        var cardFace2 = new Image();
-        cardFace1.src = "assets/" + names[i] + ".png";
-        cardFace2.src = "assets/" + names[i] + ".png";
-        cardFace1.id = i;
-        cardFace2.id = i;
-        cardFace1.classList.add("card-value");
-        cardFace2.classList.add("card-value");
-        cardFaces.push(cardFace1);
-        cardFaces.push(cardFace2);
-    }
-    scrambleArray(cardFaces);
-    for (var i = 0; i < game.cardArray.length; i++) {
-        game.cardArray[i].id = cardFaces[i].id;
-        getChildByClassName(game.cardArray[i], "card-front").appendChild(cardFaces[i]);
-    }
-}
-
-function start(game) {
-    generateCards(game);
-    game.cardToCheck = null;
-    game.matchedCards = [];
-    game.busy = false;
-    game.totalClicks = 0;
-    game.ticker = document.getElementById("flips");
-    game.ticker.innerText = game.totalClicks;
-}
-
 function flipCard(game, card) {
-    if (canFlip(game, card)) {
-        card.classList.add("visible")
-        game.totalClicks++;
-        game.ticker.innerText = game.totalClicks;
-        if (!game.cardToCheck) {
-            game.cardToCheck = card;
-        } else if (game.cardToCheck.id === card.id) {
-            game.matchedCards.push(game.cardToCheck);
-            game.matchedCards.push(card);
-            game.cardToCheck.classList.add("matched");
-            card.classList.add("matched");
+    if (!canFlip(game, card)) {
+        return; // Guard clause
+    }
+    card.classList.add("visible"); // Flip the card
+    game.totalClicks++; // increment flips
+    game.ticker.innerText = game.totalClicks;
+    if (!game.cardToCheck) {
+        // if this is our first card we can set it in our cardToCheck and return
+        game.cardToCheck = card;
+    } else if (game.cardToCheck.id === card.id) {
+        // if we have matching cards we can add them to the matchedCards array
+        game.matchedCards.push(game.cardToCheck);
+        game.matchedCards.push(card);
+        game.cardToCheck.classList.add("matched");
+        card.classList.add("matched");
+        game.cardToCheck = null; // remove this for the next probable pair
+    } else {
+        // we don't have any cards that are the same so we wait a bit
+        // and flip back over to give the user a chance to see the cards
+        game.busy = true;
+        setTimeout(function() {
+            card.classList.remove("visible")
+            game.cardToCheck.classList.remove("visible")
             game.cardToCheck = null;
-        } else {
-            game.busy = true;
+            game.busy = false;
+        }, 2000);
+    }
+    if (game.matchedCards.length == game.cardArray.length) {
+        game.busy = true;
+        // we have to have a local variable (i) that doesn't get overridden
+        // so we create a function and call it recursively
+        (function flipCards(i) {
+            // if the user has started a new game we want to flip all cards
+            // imediately and return
+            if (!game.busy) {
+                while (i >= 0) {
+                    game.cardArray[i].classList.remove("visible");
+                    i--;
+                }
+            }
+            if (i < 0) { // exit condition for the recursion
+                return;
+            }
+            // wait until the card has flipped and remove the image
             setTimeout(function() {
-                card.classList.remove("visible")
-                game.cardToCheck.classList.remove("visible")
-                game.cardToCheck = null;
-                game.busy = false;
-            }, 2000);
-        }
-        if (game.matchedCards.length == game.cardArray.length) {
-            game.busy = true;
-            (function flipCards(i) {
-                if (!game.busy) {
-                    while (i >= 0) {
-                        game.cardArray[i].classList.remove("visible");
-                        i--;
-                    }
-                }
-                if (i < 0)
-                {
-                    return;
-                }
-                setTimeout(function(){
-                    getChildByClassName(game.cardArray[i], "card-front").innerHTML = "";
-                }, 500);
-                game.cardArray[i].classList.remove("visible");
-                game.cardArray[i].classList.remove("matched");
-                setTimeout(function(){
-                    flipCards(i - 1);
-                }, 200);
-            })(game.cardArray.length - 1);
-            document.getElementById("victory-text").classList.add("visible");
-        }
+                getChildByClassName(game.cardArray[i], "card-front").innerHTML = "";
+            }, 500);
+            game.cardArray[i].classList.remove("visible");
+            game.cardArray[i].classList.remove("matched");
+            setTimeout(function() {
+                flipCards(i - 1); // this is the recursive part
+            }, 250);
+        })(game.cardArray.length - 1);
+        document.getElementById("victory-text").classList.add("visible");
     }
 }
 
@@ -140,7 +140,7 @@ function init() {
     // Get cards from html
     let cards = Array.from(document.getElementsByClassName("card"));
     // Create a game where we pass in the cards and 100 seconds
-    let game = new MatchingGame(cards, 100);
+    let game = new MatchingGame(cards);
     // Loop over each overlay and add an eventListener
     for (var i = 0; i < overlays.length; i++) {
         // I have to make this a function inside the block so it saves the local
@@ -151,7 +151,7 @@ function init() {
                 // Whenever someone clicks on the overlay we want it to go away
                 // and start a new game
                 overlay.classList.remove("visible");
-                start(game);
+                game.startGame();
             });
         })(overlays[i]);
     }
