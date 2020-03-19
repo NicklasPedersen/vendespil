@@ -19,24 +19,51 @@ function getChildByClassName(parent, className) {
     }
 }
 
+// This is based on the fisher-yates shuffle (modern version)
+function scrambleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        // random integer j that is 0 <= j <= i
+        var j = Math.floor(Math.random() * (i + 1));
+        // An alternative is to use destructuring assignment
+        // [arr[i], arr[j]] = [arr[j], arr[i]];
+        // But that might be slower
+        var tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+}
+
 function generateCards(game) {
     var names = [
         "smiley",
-        "cat"
+        "cat",
+        "line",
+        "cross",
+        "star",
+        "square",
+        "triangle",
+        "circle",
+        "up-arrow",
+        "left-arrow",
+        "right-arrow",
+        "down-arrow",
     ];
     var cardFaces = [];
     // Create a pair for each different name
-    for (var i = 0; i < names.length; i++) {
+    for (var i = 0; i < names.length && i < game.cardArray.length / 2; i++) {
         var cardFace1 = new Image();
         var cardFace2 = new Image();
+        cardFace1.src = "assets/" + names[i] + ".png";
+        cardFace2.src = "assets/" + names[i] + ".png";
         cardFace1.id = i;
         cardFace2.id = i;
-        cardFace1.src = names[i] + ".png";
-        cardFace2.src = names[i] + ".png";
+        cardFace1.classList.add("card-value");
+        cardFace2.classList.add("card-value");
         cardFaces.push(cardFace1);
         cardFaces.push(cardFace2);
     }
-    for (var i = 0; i < game.cardArray.length && i < cardFaces.length; i++) {
+    scrambleArray(cardFaces);
+    for (var i = 0; i < game.cardArray.length; i++) {
         game.cardArray[i].id = cardFaces[i].id;
         getChildByClassName(game.cardArray[i], "card-front").appendChild(cardFaces[i]);
     }
@@ -45,10 +72,11 @@ function generateCards(game) {
 function start(game) {
     generateCards(game);
     game.cardToCheck = null;
-    game.totalClicks = 0;
     game.matchedCards = [];
     game.busy = false;
+    game.totalClicks = 0;
     game.ticker = document.getElementById("flips");
+    game.ticker.innerText = game.totalClicks;
 }
 
 function flipCard(game, card) {
@@ -61,6 +89,8 @@ function flipCard(game, card) {
         } else if (game.cardToCheck.id === card.id) {
             game.matchedCards.push(game.cardToCheck);
             game.matchedCards.push(card);
+            game.cardToCheck.classList.add("matched");
+            card.classList.add("matched");
             game.cardToCheck = null;
         } else {
             game.busy = true;
@@ -84,9 +114,13 @@ function flipCard(game, card) {
                 {
                     return;
                 }
-                game.cardArray[i].classList.remove("visible");
                 setTimeout(function(){
-                    flipCards(i - 1)
+                    getChildByClassName(game.cardArray[i], "card-front").innerHTML = "";
+                }, 500);
+                game.cardArray[i].classList.remove("visible");
+                game.cardArray[i].classList.remove("matched");
+                setTimeout(function(){
+                    flipCards(i - 1);
                 }, 200);
             })(game.cardArray.length - 1);
             document.getElementById("victory-text").classList.add("visible");
@@ -100,7 +134,7 @@ function canFlip(game, card) {
     return !game.busy && card !== game.cardToCheck && !game.matchedCards.includes(card);
 }
 
-function ready() {
+function init() {
     // Get overlays from html
     let overlays = Array.from(document.getElementsByClassName("overlay-text"));
     // Get cards from html
@@ -133,8 +167,10 @@ function ready() {
 
 }
 
+// We check if the dom has loaded, if it hasn't we listen for the event,
+// else we just call the init function
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", ready);
+    document.addEventListener("DOMContentLoaded", init);
 } else {
-    ready();
+    init();
 }

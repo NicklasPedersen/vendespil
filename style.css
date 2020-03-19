@@ -17,20 +17,17 @@ body {
     font-size: 3em
 }
 
-.game-info-container {
-    grid-column: 1 / -1; /* this makes the columns go from 1 to -1 which spans the entire column */
-    display: flex; /* to make them spaced */
-    justify-content: space-between;
-}
-
 .game-info {
+    grid-column: 1 / -1; /* this makes the columns go from 1 to -1 which spans the entire column */
+    justify-content: space-between;
+    text-align: center;
     font-size: 3em;
 }
 
 .game-container {
     margin: 50px auto;
     display: grid;
-    grid-template-columns: repeat(6, auto);
+    grid-template-columns: repeat(6, auto); /* six cards per row */
     grid-gap: 10px;
     margin: 50px;
     justify-content: center;
@@ -130,16 +127,19 @@ body {
 
 @media (max-width: 900px) {
     .game-container {
+        /* if we have a smaller screen or the window gets resized to less than
+         * 900px we make it so there is 4 cards per column */
         grid-template-columns: repeat(4, auto);
     }
 }
 
 @media (max-width: 600px) {
     .game-container {
+        /* if we have a smaller screen or the window gets resized to less than
+         * 600px we make it so there is 2 cards per column */
         grid-template-columns: repeat(2, auto);
     }
     .info-container {
         flex-direction: column;
-        align-items: center;
     }
 }
