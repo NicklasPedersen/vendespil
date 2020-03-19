@@ -99,7 +99,7 @@ function flipCard(game, card) {
                 game.cardToCheck.classList.remove("visible")
                 game.cardToCheck = null;
                 game.busy = false;
-            }, 1000);
+            }, 2000);
         }
         if (game.matchedCards.length == game.cardArray.length) {
             game.busy = true;
